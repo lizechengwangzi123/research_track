@@ -1,0 +1,9 @@
+{
+  "name": "research-track-app",
+  "private": true,
+  "scripts": {
+    "client-dev": "npm run dev --prefix client",
+    "server-dev": "npm run dev --prefix server",
+    "install-all": "npm install && npm install --prefix client && npm install --prefix server"
+  }
+}
