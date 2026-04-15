@@ -58,4 +58,23 @@ router.post('/login', async (req: Request, res: Response): Promise<any> => {
   }
 });
 
+// Search users
+router.get('/search', async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { email } = req.query;
+    if (!email) return res.status(400).json({ error: 'Email query required' });
+
+    const users = await prisma.user.findMany({
+      where: {
+        email: { contains: String(email), mode: 'insensitive' }
+      },
+      select: { id: true, name: true, email: true }
+    });
+
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: 'Search failed' });
+  }
+});
+
 export default router;
