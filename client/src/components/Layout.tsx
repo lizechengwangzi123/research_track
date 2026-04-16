@@ -58,6 +58,24 @@ export default function Layout({ children, user }: any) {
           <h1 className="text-xl font-black text-primary font-headline tracking-tighter">ResearchTrack</h1>
           <p className="font-headline uppercase tracking-widest text-[10px] font-bold text-on-surface-variant">Clinical Editorial</p>
         </div>
+
+        {/* User Identity Display */}
+        <div className="mx-2 mb-6 p-4 bg-white rounded-2xl shadow-sm border border-outline-variant/10">
+          <div className="flex items-center space-x-3 mb-1">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-lg">
+              {user?.name?.[0]}
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-black text-on-surface truncate">{user?.name}</p>
+              <p className="text-[9px] font-bold text-outline truncate">{user?.email}</p>
+            </div>
+          </div>
+          <div className="mt-2 pt-2 border-t border-outline-variant/5 flex items-center space-x-1">
+            <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+            <span className="text-[8px] font-black uppercase text-green-600 tracking-tighter">Active Session</span>
+          </div>
+        </div>
+
         <nav className="flex-1 space-y-2">
           {navLinks.map((link) => (
             <Link 
@@ -97,16 +115,17 @@ export default function Layout({ children, user }: any) {
           <div className="flex items-center space-x-4">
             <Link to="/chat" className="relative">
               <span className="material-symbols-outlined text-on-surface-variant">chat_bubble</span>
-              {unreadCount > 0 && (
+              {(unreadCount || 0) > 0 && (
                 <span className="absolute -top-1 -right-1 bg-error text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center">
                   {unreadCount}
                 </span>
               )}
             </Link>
-            <div className="w-8 h-8 rounded-full bg-surface-container overflow-hidden">
-              <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+            <div className="flex items-center space-x-2 bg-white/50 px-2 py-1 rounded-full border border-outline-variant/10">
+              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
                 {user?.name?.[0]}
               </div>
+              <span className="text-[10px] font-black pr-1">{user?.name?.split(' ')[0]}</span>
             </div>
           </div>
         </header>
