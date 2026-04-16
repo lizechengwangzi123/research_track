@@ -28,7 +28,8 @@ export default function Layout({ children, user }: any) {
 
     fetchUnread();
 
-    const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:3001', {
+    const socketUrl = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace('/api', '');
+    const socket = io(socketUrl, {
       auth: { token: localStorage.getItem('token') }
     });
 

@@ -19,9 +19,10 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: "*", // Allow all origins for production stability
     methods: ["GET", "POST"]
-  }
+  },
+  transports: ['websocket', 'polling']
 });
 
 const PORT = process.env.PORT || 3001;
@@ -39,9 +40,6 @@ app.get('/health', (req, res) => {
   res.send({ status: 'ok', timestamp: new Date() });
 });
 
-// Store active users and their sockets
-const activeUsers = new Map<string, string>(); // userId -> socketId
-
 // Socket.io connection logic with JWT auth
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
@@ -56,10 +54,8 @@ io.use((socket, next) => {
 
 io.on('connection', (socket) => {
   const userId = (socket as any).userId;
-  activeUsers.set(userId, socket.id);
   socket.join(userId);
-  
-  console.log(`User connected: ${userId} (${socket.id})`);
+  console.log(`User connected: ${userId}`);
 
   socket.on('send_message', async ({ receiverId, content }) => {
     try {
@@ -67,27 +63,30 @@ io.on('connection', (socket) => {
         data: { senderId: userId, receiverId, content }
       });
 
+      // Emit to receiver
       io.to(receiverId).emit('receive_message', message);
       
+      // Update unread count for receiver
       const unreadCount = await prisma.message.count({
         where: { receiverId, read: false }
       });
       io.to(receiverId).emit('unread_count_update', { totalUnread: unreadCount });
       
+      // Confirm to sender that it's saved
       socket.emit('message_sent', message);
     } catch (err) {
-      console.error('Failed to send message:', err);
+      console.error('Database save failed:', err);
+      socket.emit('error', { message: 'Message could not be saved to database' });
     }
   });
 
   socket.on('disconnect', () => {
-    activeUsers.delete(userId);
     console.log(`User disconnected: ${userId}`);
   });
 });
 
 httpServer.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
 
 export { io, prisma };
