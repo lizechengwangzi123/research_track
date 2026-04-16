@@ -1,0 +1,16 @@
+name: Keep Backend Alive
+
+on:
+  schedule:
+    # 每 10 分钟运行一次 (Render 的睡眠阈值是 15 分钟)
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # 允许手动触发测试
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render Backend
+        run: |
+          curl -s https://research-track.onrender.com/health
+          echo "Ping sent to Render successfully."
