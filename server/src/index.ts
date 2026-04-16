@@ -16,10 +16,14 @@ import natureRoutes from './routes/nature.js';
 import { verifyToken } from './utils/auth.js';
 
 const app = express();
+// Increase limit for Base64 image/file uploads
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "*", // Allow all origins for production stability
+    origin: "*",
     methods: ["GET", "POST"]
   },
   transports: ['websocket', 'polling']
@@ -28,7 +32,6 @@ const io = new Server(httpServer, {
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
-app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/papers', paperRoutes);
@@ -40,14 +43,11 @@ app.get('/health', (req, res) => {
   res.send({ status: 'ok', timestamp: new Date() });
 });
 
-// Socket.io connection logic with JWT auth
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('Authentication error'));
-  
   const decoded = verifyToken(token);
   if (!decoded) return next(new Error('Invalid token'));
-  
   (socket as any).userId = decoded.userId;
   next();
 });
@@ -57,26 +57,30 @@ io.on('connection', (socket) => {
   socket.join(userId);
   console.log(`User connected: ${userId}`);
 
-  socket.on('send_message', async ({ receiverId, content }) => {
+  socket.on('send_message', async ({ receiverId, content, fileUrl, fileName, fileType }) => {
     try {
       const message = await prisma.message.create({
-        data: { senderId: userId, receiverId, content }
+        data: { 
+          senderId: userId, 
+          receiverId, 
+          content,
+          fileUrl,
+          fileName,
+          fileType
+        }
       });
 
-      // Emit to receiver
       io.to(receiverId).emit('receive_message', message);
       
-      // Update unread count for receiver
       const unreadCount = await prisma.message.count({
         where: { receiverId, read: false }
       });
       io.to(receiverId).emit('unread_count_update', { totalUnread: unreadCount });
       
-      // Confirm to sender that it's saved
       socket.emit('message_sent', message);
     } catch (err) {
       console.error('Database save failed:', err);
-      socket.emit('error', { message: 'Message could not be saved to database' });
+      socket.emit('error', { message: 'Message could not be saved' });
     }
   });
 
