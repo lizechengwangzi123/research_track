@@ -11,7 +11,6 @@ export default function Chat() {
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [initialLoad, setInitialLoad] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<any>(null);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -46,9 +45,7 @@ export default function Chat() {
       setMessages(prev => {
         const currentPath = window.location.pathname;
         if (currentPath === `/chat/${message.senderId}`) {
-          // Immediately mark as read to sync Layout count
-          api.post(`/messages/read/${message.senderId}`);
-          setInitialLoad(false); // Enable smooth scroll for new incoming messages
+          api.post(`/messages/read/${message.senderId}`).then(() => fetchData());
           return [...prev, message];
         } else {
           fetchData();
@@ -66,7 +63,6 @@ export default function Chat() {
     if (id) {
       const fetchChat = async () => {
         setLoading(true);
-        setInitialLoad(true); // Disable smooth scroll for initial load to prevent jump
         try {
           const { data } = await api.get(`/messages/${id}`);
           setMessages(data);
@@ -83,16 +79,13 @@ export default function Chat() {
     }
   }, [id]);
 
+  // Handle scrolling within the chat box ONLY
   useEffect(() => {
-    if (messages.length > 0) {
-      if (initialLoad) {
-        scrollRef.current?.scrollIntoView({ behavior: 'auto' });
-        setInitialLoad(false);
-      } else {
-        scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }
+    if (scrollRef.current) {
+      // Use scrollIntoView with 'nearest' to avoid whole page jumping
+      scrollRef.current.scrollIntoView({ behavior: 'auto', block: 'nearest' });
     }
-  }, [messages, initialLoad]);
+  }, [messages]);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,7 +94,6 @@ export default function Chat() {
     const messageData = { receiverId: id, content: newMessage };
     socketRef.current.emit('send_message', messageData);
     
-    setInitialLoad(false); // Enable smooth scroll for my sent message
     const tempMsg = {
       id: Date.now().toString(),
       senderId: user.id,
@@ -163,7 +155,7 @@ export default function Chat() {
       </div>
 
       {/* Chat Area Column */}
-      <div className="flex-1 flex flex-col relative">
+      <div className="flex-1 flex flex-col relative bg-gray-50/10">
         {id ? (
           <>
             <div className="p-6 border-b border-outline-variant/10 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
@@ -175,14 +167,13 @@ export default function Chat() {
                   <h3 className="font-headline font-bold text-on-surface leading-none mb-1">{activeFriend?.name}</h3>
                   <p className="text-[10px] text-green-500 font-black uppercase tracking-widest flex items-center">
                     <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5 animate-pulse"></span>
-                    Online for collaboration
+                    Laboratory Active
                   </p>
                 </div>
               </div>
-              <button className="material-symbols-outlined text-outline hover:text-primary transition-colors">more_vert</button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50/30">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {loading ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -202,7 +193,8 @@ export default function Chat() {
                   </div>
                 );
               })}
-              <div ref={scrollRef} />
+              {/* This dummy div is the target for scrollIntoView */}
+              <div ref={scrollRef} className="h-1" />
             </div>
 
             <form onSubmit={handleSendMessage} className="p-6 bg-white border-t border-outline-variant/10">
@@ -229,8 +221,8 @@ export default function Chat() {
             <div className="w-24 h-24 bg-surface-container-high rounded-3xl flex items-center justify-center mb-6">
               <span className="material-symbols-outlined text-5xl">chat_bubble</span>
             </div>
-            <h3 className="font-headline text-2xl font-black mb-2">Internal Communications</h3>
-            <p className="max-w-xs font-medium text-sm">Select a colleague from the directory to start coordinating your research projects.</p>
+            <h3 className="font-headline text-2xl font-black mb-2">Select a Discussion</h3>
+            <p className="max-w-xs font-medium text-sm">Choose a colleague from the list to start collaborating on your research manuscripts.</p>
           </div>
         )}
       </div>

@@ -22,6 +22,8 @@ model User {
   bio           String?
   resetToken    String?
   resetTokenExpiry DateTime?
+  verificationCode String?
+  isVerified    Boolean      @default(false)
   papers        Paper[]
   sentRequests  Friendship[] @relation("SentRequests")
   receivedReqs  Friendship[] @relation("ReceivedRequests")
