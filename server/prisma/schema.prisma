@@ -20,6 +20,8 @@ model User {
   name          String
   avatar        String?
   bio           String?
+  resetToken    String?
+  resetTokenExpiry DateTime?
   papers        Paper[]
   sentRequests  Friendship[] @relation("SentRequests")
   receivedReqs  Friendship[] @relation("ReceivedRequests")
@@ -34,6 +36,11 @@ model Paper {
   title       String
   abstract    String?
   status      String   // Ideation, Drafting, Submitted, Under Review, Published
+  journalName String?
+  link        String?
+  authors     String?
+  submittedAt DateTime?
+  order       Int      @default(0)
   userId      String
   user        User     @relation(fields: [userId], references: [id])
   createdAt   DateTime @default(now())

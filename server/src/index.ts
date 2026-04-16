@@ -1,18 +1,19 @@
+import dotenv from 'dotenv';
+dotenv.config(); // Must be first
+
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
+import prisma from './lib/prisma.js';
 
 import authRoutes from './routes/auth.js';
 import paperRoutes from './routes/papers.js';
 import friendRoutes from './routes/friends.js';
 import messageRoutes from './routes/messages.js';
+import natureRoutes from './routes/nature.js';
 
 import { verifyToken } from './utils/auth.js';
-
-dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
@@ -23,7 +24,6 @@ const io = new Server(httpServer, {
   }
 });
 
-const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
@@ -33,6 +33,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/papers', paperRoutes);
 app.use('/api/friends', friendRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/nature', natureRoutes);
 
 app.get('/health', (req, res) => {
   res.send({ status: 'ok', timestamp: new Date() });
@@ -56,6 +57,8 @@ io.use((socket, next) => {
 io.on('connection', (socket) => {
   const userId = (socket as any).userId;
   activeUsers.set(userId, socket.id);
+  socket.join(userId);
+  
   console.log(`User connected: ${userId} (${socket.id})`);
 
   socket.on('send_message', async ({ receiverId, content }) => {
@@ -64,12 +67,13 @@ io.on('connection', (socket) => {
         data: { senderId: userId, receiverId, content }
       });
 
-      const receiverSocketId = activeUsers.get(receiverId);
-      if (receiverSocketId) {
-        io.to(receiverSocketId).emit('receive_message', message);
-      }
+      io.to(receiverId).emit('receive_message', message);
       
-      // Echo back to sender
+      const unreadCount = await prisma.message.count({
+        where: { receiverId, read: false }
+      });
+      io.to(receiverId).emit('unread_count_update', { totalUnread: unreadCount });
+      
       socket.emit('message_sent', message);
     } catch (err) {
       console.error('Failed to send message:', err);

@@ -1,6 +1,8 @@
-import { Router, Response } from 'express';
-import { prisma } from '../index.js';
-import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { Router } from 'express';
+import type { Response } from 'express';
+import prisma from '../lib/prisma.js';
+import { authenticate } from '../middleware/auth.js';
+import type { AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -40,7 +42,7 @@ router.post('/request', authenticate, async (req: AuthRequest, res: Response): P
 // Accept friend request
 router.put('/accept/:id', authenticate, async (req: AuthRequest, res: Response): Promise<any> => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const userId = req.userId!;
 
     const friendship = await prisma.friendship.findUnique({ where: { id } });
@@ -74,10 +76,30 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response): Promise<a
       }
     });
 
-    const friends = friendships.map(f => f.requesterId === userId ? f.addressee : f.requester);
+    const friends = friendships.map((f: any) => f.requesterId === userId ? f.addressee : f.requester);
     res.json(friends);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch friends' });
+  }
+});
+
+// Get pending friend requests
+router.get('/requests', authenticate, async (req: AuthRequest, res: Response): Promise<any> => {
+  try {
+    const userId = req.userId!;
+    const requests = await prisma.friendship.findMany({
+      where: {
+        OR: [{ requesterId: userId }, { addresseeId: userId }],
+        status: 'PENDING'
+      },
+      include: {
+        requester: { select: { id: true, name: true, email: true } },
+        addressee: { select: { id: true, name: true, email: true } }
+      }
+    });
+    res.json(requests);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch requests' });
   }
 });
 

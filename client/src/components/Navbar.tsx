@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { LogOut, LayoutDashboard, Users, MessageSquare } from 'lucide-react';
+import { LogOut, LayoutDashboard, Users } from 'lucide-react';
 
 export default function Navbar({ user, setUser }: any) {
   const navigate = useNavigate();

@@ -2,8 +2,12 @@
   "name": "research-track-app",
   "private": true,
   "scripts": {
+    "start": "concurrently \"npm run server-dev\" \"npm run client-dev\"",
     "client-dev": "npm run dev --prefix client",
     "server-dev": "npm run dev --prefix server",
-    "install-all": "npm install && npm install --prefix client && npm install --prefix server"
+    "install-all": "npm install && npm install --prefix client --legacy-peer-deps && npm install --prefix server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }

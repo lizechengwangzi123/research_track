@@ -5,7 +5,10 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Network from './pages/Network';
 import Chat from './pages/Chat';
-import Navbar from './components/Navbar';
+import Statistics from './pages/Statistics';
+import NatureFeed from './pages/NatureFeed';
+import ResetPassword from './pages/ResetPassword';
+import Layout from './components/Layout';
 
 function App() {
   const [user, setUser] = useState<any>(null);
@@ -19,18 +22,26 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
-        {user && <Navbar user={user} setUser={setUser} />}
-        <main className="container mx-auto px-4 py-8">
+      {user ? (
+        <Layout user={user}>
           <Routes>
-            <Route path="/login" element={!user ? <Login setUser={setUser} /> : <Navigate to="/" />} />
-            <Route path="/register" element={!user ? <Register setUser={setUser} /> : <Navigate to="/" />} />
-            <Route path="/" element={user ? <Dashboard /> : <Navigate to="/login" />} />
-            <Route path="/network" element={user ? <Network /> : <Navigate to="/login" />} />
-            <Route path="/chat/:id" element={user ? <Chat /> : <Navigate to="/login" />} />
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/network" element={<Network />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/chat/:id" element={<Chat />} />
+            <Route path="/statistics" element={<Statistics />} />
+            <Route path="/nature" element={<NatureFeed />} />
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
-        </main>
-      </div>
+        </Layout>
+      ) : (
+        <Routes>
+          <Route path="/login" element={<Login setUser={setUser} />} />
+          <Route path="/register" element={<Register setUser={setUser} />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="*" element={<Navigate to="/login" />} />
+        </Routes>
+      )}
     </Router>
   );
 }
