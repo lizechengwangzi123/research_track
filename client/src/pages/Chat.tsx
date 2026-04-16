@@ -19,7 +19,7 @@ export default function Chat() {
   // Notification Sound (Base64 Ding)
   const playNotificationSound = () => {
     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
-    audio.play().catch(e => console.log('Audio play blocked by browser'));
+    audio.play().catch(() => console.log('Audio play blocked by browser'));
   };
 
   const fetchData = async () => {
